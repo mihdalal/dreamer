@@ -14,6 +14,10 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.mixed_precision import experimental as prec
 
+from autolab_core import YamlConfig
+from hrl_exp.envs.franka_lift import GymFrankaLiftVecEnv
+from hrl_exp.envs.wrappers import ImageEnvWrapper, SingleEnvWrapper
+
 tf.get_logger().setLevel('ERROR')
 
 from tensorflow_probability import distributions as tfd
@@ -208,8 +212,8 @@ class Dreamer(tools.Module):
             data, feat, prior_dist, post_dist, likes, div,
             model_loss, value_loss, actor_loss, model_norm, value_norm,
             actor_norm)
-      if tf.equal(log_images, True):
-        self._image_summaries(data, embed, image_pred)
+      # if tf.equal(log_images, True):
+      #   self._image_summaries(data, embed, image_pred)
 
   def _build_model(self):
     acts = dict(
@@ -384,6 +388,21 @@ def make_env(config, writer, prefix, datadir, store):
         task, config.action_repeat, (64, 64), grayscale=False,
         life_done=True, sticky_actions=True)
     env = wrappers.OneHotAction(env)
+  elif suite == 'franka':
+    cfg_path = 'run_franka_lift.yaml'
+
+    train_cfg = YamlConfig(cfg_path)
+    train_cfg['scene']['gui'] = 0
+    train_cfg['scene']['n_envs'] = 1
+    train_cfg['image_preprocessor'] = None
+    train_cfg['env']['total_args'] = False
+    train_cfg['rews']['block_distance_to_lift'] = 0
+    train_cfg['camera']['imshape']['width'] = 64
+    train_cfg['camera']['imshape']['height'] = 64
+    env = GymFrankaLiftVecEnv(train_cfg, **train_cfg['env'])
+    env = ImageEnvWrapper(env, train_cfg, show_robot_view=False)
+    env = SingleEnvWrapper(env)
+    env = wrappers.FrankaIG(env)
   else:
     raise NotImplementedError(suite)
   env = wrappers.TimeLimit(env, config.time_limit / config.action_repeat)
@@ -413,12 +432,16 @@ def main(config):
   writer = tf.summary.create_file_writer(
       str(config.logdir), max_queue=1000, flush_millis=20000)
   writer.set_as_default()
-  train_envs = [wrappers.Async(lambda: make_env(
-      config, writer, 'train', datadir, store=True), config.parallel)
-      for _ in range(config.envs)]
-  test_envs = [wrappers.Async(lambda: make_env(
-      config, writer, 'test', datadir, store=False), config.parallel)
-      for _ in range(config.envs)]
+  # train_envs = [wrappers.Async(lambda: make_env(
+  #     config, writer, 'train', datadir, store=True), config.parallel)
+  #     for _ in range(config.envs)]
+  # test_envs = [wrappers.Async(lambda: make_env(
+  #     config, writer, 'test', datadir, store=False), config.parallel)
+  #     for _ in range(config.envs)]
+  train_envs = [make_env(
+    config, writer, 'train', datadir, store=True)]
+  test_envs = [make_env(
+    config, writer, 'test', datadir, store=False)]
   actspace = train_envs[0].action_space
 
   # Prefill dataset with random episodes.

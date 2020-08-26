@@ -62,6 +62,39 @@ class DeepMindControl:
     return self._env.physics.render(*self._size, camera_id=self._camera)
 
 
+class FrankaIG:
+
+  def __init__(self, env):
+    self.env = env
+
+  @property
+  def observation_space(self):
+    spaces = {}
+    spaces['image'] = self.env.observation_space
+    return gym.spaces.Dict(spaces)
+
+  @property
+  def action_space(self):
+    return self.env.action_space
+
+  def step(self, action):
+    o,reward, done, info = self.env.step(action)
+    obs = {}
+    obs['image'] = o
+    return obs, reward, done, info
+
+  def reset(self):
+    o = self.env.reset()
+    obs = {}
+    obs['image'] = o
+    return obs
+
+  def render(self, *args, **kwargs):
+    if kwargs.get('mode', 'rgb_array') != 'rgb_array':
+      raise ValueError("Only render mode 'rgb_array' is supported.")
+    return self.env.render(*args, **kwargs)
+
+
 class Atari:
 
   LOCK = threading.Lock()

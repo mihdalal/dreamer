@@ -107,22 +107,27 @@ def simulate(agent, envs, steps=0, episodes=0, state=None):
     agent_state = None
   else:
     step, episode, done, length, obs, agent_state = state
+
   while (steps and step < steps) or (episodes and episode < episodes):
     # Reset envs if necessary.
     if done.any():
-      indices = [index for index, d in enumerate(done) if d]
-      promises = [envs[i].reset(blocking=False) for i in indices]
-      for index, promise in zip(indices, promises):
-        obs[index] = promise()
+      # indices = [index for index, d in enumerate(done) if d]
+      # promises = [envs[i].reset(blocking=False) for i in indices]
+      # for index, promise in zip(indices, promises):
+      #   obs[index] = promise()
+      obs[0] = envs[0].reset()
     # Step agents.
-    obs = {k: np.stack([o[k] for o in obs]) for k in obs[0]}
+    # obs = {k: np.stack([o[k] for o in obs]) for k in obs[0]}
+    obs = {k: np.expand_dims(obs[0][k], axis=0) for k in obs[0]}
     action, agent_state = agent(obs, done, agent_state)
     action = np.array(action)
     assert len(action) == len(envs)
     # Step envs.
-    promises = [e.step(a, blocking=False) for e, a in zip(envs, action)]
-    obs, _, done = zip(*[p()[:3] for p in promises])
-    obs = list(obs)
+    # promises = [e.step(a, blocking=False) for e, a in zip(envs, action)]
+    # obs, _, done = zip(*[p()[:3] for p in promises])
+    obs, _, done, _ = envs[0].step(action[0])
+    obs = [obs]
+    done = [done]
     done = np.stack(done)
     episode += int(done.sum())
     length += 1
@@ -172,17 +177,17 @@ def load_episodes(directory, rescan, length=None, balance=False, seed=0):
     keys = list(cache.keys())
     for index in random.choice(len(keys), rescan):
       episode = cache[keys[index]]
-      if length:
-        total = len(next(iter(episode.values())))
-        available = total - length
-        if available < 1:
-          print(f'Skipped short episode of length {available}.')
-          continue
-        if balance:
-          index = min(random.randint(0, total), available)
-        else:
-          index = int(random.randint(0, available))
-        episode = {k: v[index: index + length] for k, v in episode.items()}
+      # if length:
+      #   total = len(next(iter(episode.values())))
+      #   available = total - length
+      #   if available < 1:
+      #     print(f'Skipped short episode of length {available}.')
+      #     continue
+      #   if balance:
+      #     index = min(random.randint(0, total), available)
+      #   else:
+      #     index = int(random.randint(0, available))
+      #   episode = {k: v[index: index + length] for k, v in episode.items()}
       yield episode
 
 
