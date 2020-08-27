@@ -40,13 +40,13 @@ def define_config():
   config.log_scalars = True
   config.log_images = True
   config.gpu_growth = True
-  config.precision = 16
+  config.precision = 32
   # Environment.
-  config.task = 'dmc_walker_walk'
+  config.task = 'franka_lift'
   config.envs = 1
   config.parallel = 'none'
-  config.action_repeat = 2
-  config.time_limit = 1000
+  config.action_repeat = 1
+  config.time_limit = 3
   config.prefill = 5000
   config.eval_noise = 0.0
   config.clip_rewards = 'none'
@@ -65,7 +65,7 @@ def define_config():
   config.weight_decay_pattern = r'.*'
   # Training.
   config.batch_size = 50
-  config.batch_length = 50
+  config.batch_length = 4
   config.train_every = 1000
   config.train_steps = 100
   config.pretrain = 100
@@ -77,7 +77,7 @@ def define_config():
   # Behavior.
   config.discount = 0.99
   config.disclam = 0.95
-  config.horizon = 15
+  config.horizon = 3
   config.action_dist = 'tanh_normal'
   config.action_init_std = 5.0
   config.expl = 'additive_gaussian'
@@ -395,7 +395,6 @@ def make_env(config, writer, prefix, datadir, store):
     train_cfg['scene']['gui'] = 0
     train_cfg['scene']['n_envs'] = 1
     train_cfg['image_preprocessor'] = None
-    train_cfg['env']['total_args'] = False
     train_cfg['rews']['block_distance_to_lift'] = 0
     train_cfg['camera']['imshape']['width'] = 64
     train_cfg['camera']['imshape']['height'] = 64
@@ -405,7 +404,6 @@ def make_env(config, writer, prefix, datadir, store):
     env = wrappers.FrankaIG(env)
   else:
     raise NotImplementedError(suite)
-  env = wrappers.TimeLimit(env, config.time_limit / config.action_repeat)
   callbacks = []
   if store:
     callbacks.append(lambda ep: tools.save_episodes(datadir, [ep]))
