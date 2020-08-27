@@ -47,12 +47,15 @@ def define_config():
   config.parallel = 'none'
   config.action_repeat = 1
   config.time_limit = 3
-  config.prefill = 5000
+  # config.prefill = 5000
+  config.prefill = 1000
   config.eval_noise = 0.0
   config.clip_rewards = 'none'
   # Model.
-  config.deter_size = 200
-  config.stoch_size = 30
+  # config.deter_size = 200
+  config.deter_size = 400
+  # config.stoch_size = 30
+  config.stoch_size = 60
   config.num_units = 400
   config.dense_act = 'elu'
   config.cnn_act = 'relu'
@@ -66,7 +69,8 @@ def define_config():
   # Training.
   config.batch_size = 50
   config.batch_length = 4
-  config.train_every = 1000
+  # config.train_every = 1000
+  config.train_every = 100
   config.train_steps = 100
   config.pretrain = 100
   config.model_lr = 6e-4
@@ -77,7 +81,8 @@ def define_config():
   # Behavior.
   config.discount = 0.99
   config.disclam = 0.95
-  config.horizon = 3
+  # config.horizon = 3
+  config.horizon = 1
   config.action_dist = 'tanh_normal'
   config.action_init_std = 5.0
   config.expl = 'additive_gaussian'
