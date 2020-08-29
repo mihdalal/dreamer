@@ -217,8 +217,8 @@ class Dreamer(tools.Module):
             data, feat, prior_dist, post_dist, likes, div,
             model_loss, value_loss, actor_loss, model_norm, value_norm,
             actor_norm)
-      # if tf.equal(log_images, True):
-      #   self._image_summaries(data, embed, image_pred)
+      if tf.equal(log_images, True):
+        self._image_summaries(data, embed, image_pred)
 
   def _build_model(self):
     acts = dict(
@@ -309,11 +309,11 @@ class Dreamer(tools.Module):
   def _image_summaries(self, data, embed, image_pred):
     truth = data['image'][:6] + 0.5
     recon = image_pred.mode()[:6]
-    init, _ = self._dynamics.observe(embed[:6, :5], data['action'][:6, :5])
+    init, _ = self._dynamics.observe(embed[:6, :2], data['action'][:6, :2])
     init = {k: v[:, -1] for k, v in init.items()}
-    prior = self._dynamics.imagine(data['action'][:6, 5:], init)
+    prior = self._dynamics.imagine(data['action'][:6, 2:], init)
     openl = self._decode(self._dynamics.get_feat(prior)).mode()
-    model = tf.concat([recon[:, :5] + 0.5, openl + 0.5], 1)
+    model = tf.concat([recon[:, :2] + 0.5, openl + 0.5], 1)
     error = (model - truth + 1) / 2
     openl = tf.concat([truth, model, error], 2)
     tools.graph_summary(
@@ -398,14 +398,13 @@ def make_env(config, writer, prefix, datadir, store):
 
     train_cfg = YamlConfig(cfg_path)
     train_cfg['scene']['gui'] = 0
-    train_cfg['scene']['n_envs'] = 1
+    train_cfg['scene']['n_envs'] = config.envs
     train_cfg['image_preprocessor'] = None
     train_cfg['rews']['block_distance_to_lift'] = 0
     train_cfg['camera']['imshape']['width'] = 64
     train_cfg['camera']['imshape']['height'] = 64
     env = GymFrankaLiftVecEnv(train_cfg, **train_cfg['env'])
     env = ImageEnvWrapper(env, train_cfg, show_robot_view=False)
-    env = SingleEnvWrapper(env)
     env = wrappers.FrankaIG(env)
   else:
     raise NotImplementedError(suite)
@@ -435,17 +434,11 @@ def main(config):
   writer = tf.summary.create_file_writer(
       str(config.logdir), max_queue=1000, flush_millis=20000)
   writer.set_as_default()
-  # train_envs = [wrappers.Async(lambda: make_env(
-  #     config, writer, 'train', datadir, store=True), config.parallel)
-  #     for _ in range(config.envs)]
-  # test_envs = [wrappers.Async(lambda: make_env(
-  #     config, writer, 'test', datadir, store=False), config.parallel)
-  #     for _ in range(config.envs)]
-  train_envs = [make_env(
-    config, writer, 'train', datadir, store=True)]
-  test_envs = [make_env(
-    config, writer, 'test', datadir, store=False)]
-  actspace = train_envs[0].action_space
+  train_envs = make_env(
+    config, writer, 'train', datadir, store=True)
+  test_envs = make_env(
+    config, writer, 'test', datadir, store=False)
+  actspace = train_envs.action_space
 
   # Prefill dataset with random episodes.
   step = count_steps(datadir, config)

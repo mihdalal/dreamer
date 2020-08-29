@@ -101,34 +101,21 @@ def simulate(agent, envs, steps=0, episodes=0, state=None):
   # Initialize or unpack simulation state.
   if state is None:
     step, episode = 0, 0
-    done = np.ones(len(envs), np.bool)
-    length = np.zeros(len(envs), np.int32)
-    obs = [None] * len(envs)
+    done = np.ones(envs.reset()['image'].shape[0], np.bool)
+    length = np.zeros(envs.reset()['image'].shape[0], np.int32)
+    obs = [None] * envs.reset()['image'].shape[0]
     agent_state = None
   else:
     step, episode, done, length, obs, agent_state = state
-
   while (steps and step < steps) or (episodes and episode < episodes):
     # Reset envs if necessary.
     if done.any():
-      # indices = [index for index, d in enumerate(done) if d]
-      # promises = [envs[i].reset(blocking=False) for i in indices]
-      # for index, promise in zip(indices, promises):
-      #   obs[index] = promise()
-      obs[0] = envs[0].reset()
+      obs = envs.reset()
     # Step agents.
-    # obs = {k: np.stack([o[k] for o in obs]) for k in obs[0]}
-    obs = {k: np.expand_dims(obs[0][k], axis=0) for k in obs[0]}
     action, agent_state = agent(obs, done, agent_state)
     action = np.array(action)
-    assert len(action) == len(envs)
     # Step envs.
-    # promises = [e.step(a, blocking=False) for e, a in zip(envs, action)]
-    # obs, _, done = zip(*[p()[:3] for p in promises])
-    obs, _, done, _ = envs[0].step(action[0])
-    obs = [obs]
-    done = [done]
-    done = np.stack(done)
+    obs, _, done, _ = envs.step(action)
     episode += int(done.sum())
     length += 1
     step += (done * length).sum()

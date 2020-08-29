@@ -80,13 +80,13 @@ class FrankaIG:
   def step(self, action):
     o,reward, done, info = self.env.step(action)
     obs = {}
-    obs['image'] = o
+    obs['image'] = np.array(o)
     return obs, reward, done, info
 
   def reset(self):
     o = self.env.reset()
     obs = {}
-    obs['image'] = o
+    obs['image'] = np.array(o)
     return obs
 
   def render(self, *args, **kwargs):
@@ -186,34 +186,38 @@ class Collect:
     self._env = env
     self._callbacks = callbacks or ()
     self._precision = precision
-    self._episode = None
+    self.n_envs = env.reset()['image'].shape[0]
+    self._episodes = [None for i in range(self.n_envs)]
 
   def __getattr__(self, name):
     return getattr(self._env, name)
 
   def step(self, action):
     obs, reward, done, info = self._env.step(action)
-    obs = {k: self._convert(v) for k, v in obs.items()}
-    transition = obs.copy()
-    transition['action'] = action
-    transition['reward'] = reward
-    transition['discount'] = info.get('discount', np.array(1 - float(done)))
-    self._episode.append(transition)
-    if done:
-      episode = {k: [t[k] for t in self._episode] for k in self._episode[0]}
-      episode = {k: self._convert(v) for k, v in episode.items()}
-      info['episode'] = episode
+    for i in range(self.n_envs):
+      obs_ep = {k: self._convert(v[i]) for k, v in obs.items()}
+      transition = obs_ep.copy()
+      transition['action'] = action[i]
+      transition['reward'] = reward[i]
+      transition['discount'] = info[i].get('discount', np.array(1 - float(done[i])))
+      self._episodes[i].append(transition)
+    if done.all():
       for callback in self._callbacks:
-        callback(episode)
+        for episode in self._episodes:
+          episode = {k: [t[k] for t in episode] for k in episode[0]}
+          episode = {k: self._convert(v) for k, v in episode.items()}
+          callback(episode)
     return obs, reward, done, info
 
   def reset(self):
     obs = self._env.reset()
-    transition = obs.copy()
-    transition['action'] = np.zeros(self._env.action_space.shape)
-    transition['reward'] = 0.0
-    transition['discount'] = 1.0
-    self._episode = [transition]
+    for i in range(self.n_envs):
+      obs_ep = {k: self._convert(v[i]) for k, v in obs.items()}
+      transition = obs_ep.copy()
+      transition['action'] = np.zeros(self._env.action_space.shape)
+      transition['reward'] = 0.0
+      transition['discount'] = 1.0
+      self._episodes[i] = [transition]
     return obs
 
   def _convert(self, value):
@@ -386,7 +390,7 @@ class RewardObs:
 
   def reset(self):
     obs = self._env.reset()
-    obs['reward'] = 0.0
+    obs['reward'] = np.zeros(obs['image'].shape[0])
     return obs
 
 
