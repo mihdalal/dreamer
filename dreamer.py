@@ -34,8 +34,8 @@ def define_config():
   # General.
   config.logdir = pathlib.Path('.')
   config.seed = 0
-  config.steps = 5e6
-  config.eval_every = 1e4
+  config.steps = 1e5
+  config.eval_every = 1e3
   config.log_every = 1e3
   config.log_scalars = True
   config.log_images = True
