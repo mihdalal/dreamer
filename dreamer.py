@@ -34,7 +34,7 @@ def define_config():
   # General.
   config.logdir = pathlib.Path('.')
   config.seed = 0
-  config.steps = 1e5
+  config.steps = 5e6
   config.eval_every = 1e3
   config.log_every = 1e3
   config.log_scalars = True
@@ -67,7 +67,7 @@ def define_config():
   config.weight_decay = 0.0
   config.weight_decay_pattern = r'.*'
   # Training.
-  config.batch_size = 50
+  config.batch_size = 625
   config.batch_length = 4
   # config.train_every = 1000
   config.train_every = 100
@@ -398,13 +398,16 @@ def make_env(config, writer, prefix, datadir, store):
 
     train_cfg = YamlConfig(cfg_path)
     train_cfg['scene']['gui'] = 0
-    train_cfg['scene']['n_envs'] = config.envs
+    if store:
+      train_cfg['scene']['n_envs'] = config.envs
+    else:
+      train_cfg['scene']['n_envs'] = 5
     train_cfg['image_preprocessor'] = None
     train_cfg['rews']['block_distance_to_lift'] = 0
     train_cfg['camera']['imshape']['width'] = 64
     train_cfg['camera']['imshape']['height'] = 64
     env = GymFrankaLiftVecEnv(train_cfg, **train_cfg['env'])
-    env = ImageEnvWrapper(env, train_cfg, show_robot_view=False)
+    env = ImageEnvWrapper(env, train_cfg)
     env = wrappers.FrankaIG(env)
   else:
     raise NotImplementedError(suite)
@@ -459,7 +462,7 @@ def main(config):
   while step < config.steps:
     print('Start evaluation.')
     tools.simulate(
-        functools.partial(agent, training=False), test_envs, episodes=1)
+        functools.partial(agent, training=False), test_envs, episodes=10)
     writer.flush()
     print('Start collection.')
     steps = config.eval_every // config.action_repeat
