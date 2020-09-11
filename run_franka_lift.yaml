@@ -120,3 +120,5 @@ camera:
   look_at: [0, -.3, 0]
 
 image_preprocessor: vgg
+pytorch_format: False
+flatten: False
