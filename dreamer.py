@@ -16,7 +16,7 @@ from tensorflow.keras.mixed_precision import experimental as prec
 
 from autolab_core import YamlConfig
 from hrl_exp.envs.franka_lift import GymFrankaLiftVecEnv
-from hrl_exp.envs.wrappers import ImageEnvWrapper, SingleEnvWrapper
+from hrl_exp.envs.wrappers import ImageEnvWrapper
 
 tf.get_logger().setLevel('ERROR')
 
@@ -27,13 +27,14 @@ sys.path.append(str(pathlib.Path(__file__).parent))
 import models
 import tools
 import wrappers
+import random
 
 
 def define_config():
   config = tools.AttrDict()
   # General.
   config.logdir = pathlib.Path('.')
-  config.seed = 0
+  config.seed = random.randint(0, 100000),
   config.steps = 5e6
   config.eval_every = 1e3
   config.log_every = 1e3
@@ -47,14 +48,11 @@ def define_config():
   config.parallel = 'none'
   config.action_repeat = 1
   config.time_limit = 3
-  # config.prefill = 5000
-  config.prefill = 1000
+  config.prefill = 5000
   config.eval_noise = 0.0
   config.clip_rewards = 'none'
   # Model.
-  # config.deter_size = 200
   config.deter_size = 400
-  # config.stoch_size = 30
   config.stoch_size = 60
   config.num_units = 400
   config.dense_act = 'elu'
@@ -69,7 +67,6 @@ def define_config():
   # Training.
   config.batch_size = 625
   config.batch_length = 4
-  # config.train_every = 1000
   config.train_every = 100
   config.train_steps = 100
   config.pretrain = 100
@@ -81,7 +78,6 @@ def define_config():
   # Behavior.
   config.discount = 0.99
   config.disclam = 0.95
-  # config.horizon = 3
   config.horizon = 2
   config.action_dist = 'tanh_normal'
   config.action_init_std = 5.0
