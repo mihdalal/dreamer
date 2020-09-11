@@ -60,7 +60,7 @@ def define_config():
   config.dense_act = 'elu'
   config.cnn_act = 'relu'
   config.cnn_depth = 32
-  config.pcont = False
+  config.pcont = True
   config.free_nats = 3.0
   config.kl_scale = 1.0
   config.pcont_scale = 10.0

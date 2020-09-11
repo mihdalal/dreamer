@@ -199,7 +199,7 @@ class Collect:
       transition = obs_ep.copy()
       transition['action'] = action[i]
       transition['reward'] = reward[i]
-      transition['discount'] = info[i].get('discount', np.array(1 - float(done[i])))
+      transition['discount'] = np.array(1 - float(done[i]))
       self._episodes[i].append(transition)
     if done.all():
       for callback in self._callbacks:
